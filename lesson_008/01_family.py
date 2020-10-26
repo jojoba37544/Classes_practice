@@ -42,8 +42,17 @@ from random import randint
 # Подвести итоги жизни за год: сколько было заработано денег, сколько сьедено еды, сколько куплено шуб.
 
 
+def printer(str, color, length, direction='right', attrs=None, end=None):
+    empty_space = '{}'.format(' ' * int(length - len(str)))
+    if direction == 'right':
+        return cprint(empty_space, color, attrs=attrs, end=''), cprint(str, color, end=end)
+    elif direction == 'left':
+        return cprint(str, color, end=''), cprint(empty_space, color, attrs=attrs, end=end)
+
 
 class House:
+
+    ref_capacity = 360
 
     def __init__(self):
         self.money = 100
@@ -55,6 +64,8 @@ class House:
         self.dirt += 5
         return '{} денег в доме, еды в доме {}, грязь {}'.format(self.money, self.ref_food, self.dirt)
 
+    def __len__(self):
+        return len(self.__str__())
 
 class Human:
 
@@ -66,12 +77,12 @@ class Human:
 
     def act(self):
         if self.happiness < 0:
-            del self.house.family[self.house.family.index(member)]
+            del self.house.family[self.house.family.index(self)]
             cprint('{} УМЕР{}ОТ ДЕПРЕССИИ'.format(self.name, ' ' if self.__class__.__name__ == 'Husband' else 'ЛА '),
                    'red', attrs=['reverse'])
             return False
         if self.fullness < 0:
-            del self.house.family[self.house.family.index(member)]
+            del self.house.family[self.house.family.index(self)]
             cprint('{} УМЕР{}ОТ ГОЛОДА'.format(self.name, ' ' if self.__class__.__name__ == 'Husband' else 'ЛА '),
                    'red', attrs=['reverse'])
             return False
@@ -81,10 +92,10 @@ class Human:
         if self.house.ref_food >= 10:
             self.fullness += 30
             self.house.ref_food -= 10
-            print('{} поел{}'.format(self.name, '' if self.__class__.__name__ == 'Husband' else 'а'))
+            cprint('{} поел{}'.format(self.name, '' if self.__class__.__name__ == 'Husband' else 'а'), self.color)
         else:
-            cprint('{} собрался поесть'.format(self.name))
-            cprint('Недостаточно еды!', color='red')
+            cprint('{} собрался поесть'.format(self.name), self.color)
+            cprint('Недостаточно еды!', 'red', attrs=['reverse'])
 
     def move_in(self, house):
         self.house = house
@@ -93,10 +104,16 @@ class Human:
     def __str__(self):
         if self.house.dirt >= 90:
             self.happiness -= 10
-        return 'Я {}, сытость {}, уровень счастья {}'.format(self.name, self.fullness, self.happiness)
+        return 'Сытость {}, уровень счастья {}'.format(self.fullness, self.happiness)
+
+    def __len__(self):
+        return len(self.__str__())
 
 
 class Husband(Human):
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.color = 'blue'
 
     def act(self):
         if super().act() is False:
@@ -105,7 +122,7 @@ class Husband(Human):
             self.eat()
             return
         dice = randint(1, 6)
-        if dice in range(1, 3):
+        if dice in range(1,2,3):
             self.work()
         elif dice == 4:
             self.eat()
@@ -114,24 +131,28 @@ class Husband(Human):
 
     def work(self):
         house = self.house
-        cprint('{} весь день работал'.format(self.name), color='yellow')
+        cprint('{} весь день работал'.format(self.name), self.color)
         house.money += 150
 
     def gaming(self):
-        super().act()
         dice = randint(1, 6)
         if dice == 1:
             self.happiness += 20
-            cprint('{} весь день бездельничал'.format(self.name), color='yellow')
+            cprint('{} весь день бездельничал'.format(self.name), self.color)
         elif dice == 2:
             self.happiness += 20
-            cprint('{} весь день смотрел телевизор'.format(self.name), color='yellow')
+            cprint('{} весь день смотрел телевизор'.format(self.name), self.color)
         else:
             self.happiness += 20
-            cprint('{} весь день играл в доту'.format(self.name), color='yellow')
+            cprint('{} весь день играл в доту'.format(self.name), self.color)
+
 
 
 class Wife(Human):
+
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.color = 'magenta'
 
     def act(self):
         if super().act() is False:
@@ -139,57 +160,62 @@ class Wife(Human):
         if self.fullness <= 10:
             self.eat()
             return
+        if self.happiness < 20:
+            self.nagging()
+            return
+        if self.house.dirt >= 100:
+            self.clean_house()
+            return
         if self.house.ref_food < 20:
             self.shopping()
         dice = randint(1, 6)
         if dice == 1:
             self.buy_fur_coat()
-        elif dice == 2:
-            self.nagging()
         elif dice == 4:
             self.eat()
         elif dice == 6:
-            self.shopping()
-        elif dice == 5:
-            if self.house.dirt >= 100:
-                self.clean_house()
-            else:
-                return
+            if self.house.ref_food < self.house.ref_capacity:
+                self.shopping()
         else:
-            print('{} бездельничала'.format(self.name))
+            cprint('{} бездельничала'.format(self.name), self.color)
 
     def nagging(self):
-        if self.happiness < 50:
-            for i in self.house.family:
-                if i.__class__.__name__ == 'Husband':
-                    self.happiness += 50
-                    i.happiness -= 50
-                    cprint('{} капает на мозги {}'.format(self.name, i.name), 'blue', attrs=['reverse'])
-                else:
-                    return False
+        for fam_member in self.house.family:
+            if fam_member.__class__.__name__ == 'Husband':
+                self.happiness += 50
+                fam_member.happiness -= 50
+                cprint('{} капает на мозги {}'.format(self.name, fam_member.name), self.color)
+            else:
+                return False
+
 
     def shopping(self):
+        cprint('{} отправилась в магазин купить еды'.format(self.name), self.color)
+        remain = self.house.ref_capacity - self.house.ref_food
         if self.house.money < 180:
-            cprint('Недостаточно денег!', 'green', attrs=['reverse'])
+            cprint('Недостаточно денег!', 'red', attrs=['reverse'])
             return
-        self.house.ref_food += 180
-        self.house.money -= 180
-        print('{} сходила в магазин за едой'.format(self.name))
+        elif remain < 180:
+            self.house.money -= remain
+            self.house.ref_food += remain
+        else:
+            self.house.ref_food += 180
+            self.house.money -= 180
+        cprint('{} купила еды'.format(self.name), self.color)
 
     def buy_fur_coat(self):
-
         if self.house.money < 350:
-            cprint('{} пытается купить шубу'.format(self.name))
-            cprint('Недостаточно денег!', 'green', attrs=['reverse'])
+            cprint('{} хотела купить шубу'.format(self.name), self.color)
+            cprint('Недостаточно денег!', 'red', attrs=['reverse'])
             self.happiness -= 10
             return
         self.house.money -= 350
         self.happiness += 60
-        print('{} купила шубу'.format(self.name))
+        cprint('{} купила шубу'.format(self.name), self.color)
 
     def clean_house(self):
         self.house.dirt -= 100
-        print('{} убиралась в доме'.format(self.name))
+        cprint('{} убиралась в доме'.format(self.name), self.color)
 
 
 home = House()
@@ -202,15 +228,19 @@ wife.move_in(home)
 #     member.move_in(home)
 # masha = Wife(name='Маша')
 
-for day in range(300):
+
+
+
+
+for day in range(1, 366):
     if not home.family:
         break
     cprint('================== День {} =================='.format(day), color='red')
     for member in home.family:
         member.act()
-        cprint(member, color='cyan')
-    # cprint(masha, color='cyan')
-    cprint(home, color='cyan')
+        cprint('{}'.format(member), member.color)
+    # # cprint(masha, color='cyan')
+    cprint(home, 'cyan')
 
 
 
