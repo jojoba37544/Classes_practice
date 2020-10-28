@@ -59,7 +59,6 @@ class House:
 
     ref_capacity = 360
     pet_food_capacity = 180
-    happiness_maximum = 100
 
     def __init__(self):
         self.money = 100
@@ -78,6 +77,8 @@ class House:
 
 
 class Human:
+
+    happiness_maximum = 100
 
     def __init__(self, name):
         self.name = name
@@ -103,7 +104,7 @@ class Human:
         self.fullness -= 10
 
     def pet_interaction(self):
-        self.happiness += 5
+        self.happiness += 5 if self.happiness <= 95 else self.happiness_maximum - self.happiness
         cprint('{} гладил кота {}'.format(self.name, self.house.pet), self.color)
 
     def eat(self):
@@ -163,13 +164,13 @@ class Husband(Human):
     def gaming(self):
         dice = randint(1, 6)
         if dice == 1:
-            self.happiness += 10
+            self.happiness += 10 if self.happiness <= 90 else self.happiness_maximum - self.happiness
             cprint('{} весь день бездельничал'.format(self.name), self.color)
         elif dice == 2:
-            self.happiness += 10
+            self.happiness += 10 if self.happiness <= 90 else self.happiness_maximum - self.happiness
             cprint('{} весь день смотрел телевизор'.format(self.name), self.color)
         else:
-            self.happiness += 10
+            self.happiness += 10 if self.happiness <= 90 else self.happiness_maximum - self.happiness
             cprint('{} весь день играл в доту'.format(self.name), self.color)
 
 
@@ -202,6 +203,8 @@ class Wife(Human):
             self.buy_fur_coat()
         elif dice == 4:
             self.eat()
+        elif dice == 5:
+            self.pet_interaction()
         elif dice == 6:
             if self.house.ref_food < self.house.ref_capacity:
                 self.shopping()
@@ -213,14 +216,14 @@ class Wife(Human):
     def nagging(self):
         for fam_member in self.house.family:
             if fam_member.__class__.__name__ == 'Husband':
-                self.happiness += 50
-                fam_member.happiness -= 50
+                self.happiness += 30 if self.happiness <= 70 else self.happiness_maximum - self.happiness
+                fam_member.happiness -= 30
                 cprint('{} капает на мозги {}'.format(self.name, fam_member.name), self.color)
             else:
                 return False
 
     def cat_food_replenish(self):
-        cprint('{} отправилась в магазине купить еды для кота {}'.format(self.name, self.house.pet))
+        cprint('{} отправилась в магазине купить еды для кота {}'.format(self.name, self.house.pet), self.color)
         remain = self.house.pet_food_capacity - self.house.cat_food
         if self.house.money < 100:
             cprint('Недостаточно денег!', 'red', attrs=['reverse'])
@@ -253,7 +256,7 @@ class Wife(Human):
             self.happiness -= 10
             return
         self.house.money -= 350
-        self.happiness += 60
+        self.happiness += 60 if self.happiness <= 40 else self.happiness_maximum - self.happiness
         cprint('{} купила шубу'.format(self.name), self.color)
 
     def clean_house(self):
