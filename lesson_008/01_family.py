@@ -232,8 +232,8 @@ class Wife(Human):
             self.house.money -= remain
             self.house.cat_food += remain
         else:
-            self.house.cat_food += 180
-            self.house.money -= 180
+            self.house.cat_food += 100
+            self.house.money -= 100
 
     def shopping(self):
         cprint('{} отправилась в магазин купить еды'.format(self.name), self.color)
@@ -290,7 +290,7 @@ class Child(Human):
             if fam_member.__class__.__name__ == 'Husband' or fam_member.__class__.__name__ == 'Wife':
                 break
         if len(self.house.family) <= 1:
-            cprint('{} ОСТАЛСЯ ОДИН!, НЕКОМУ ЕГО ПОКОРМИТЬ!'.format(self.name))
+            cprint('{} ОСТАЛСЯ ОДИН!, НЕКОМУ ЕГО КОРМИТЬ!'.format(self.name))
             return
         if self.house.ref_food >= 10:
             self.fullness += 30
@@ -375,6 +375,7 @@ cat = Cat('Сосиска', home)
 hus.move_in(home)
 wife.move_in(home)
 cat.move_in()
+
 
 child = Child('Артур')
 child.move_in(home)
