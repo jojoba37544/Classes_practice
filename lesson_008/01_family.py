@@ -52,7 +52,14 @@ def printer(str, color, length, direction='right', attrs=None, end=None):
 
 
 class LifeResults:
-    pass
+
+    food = 0
+    fur_coat = 0
+    money = 0
+
+    def __str__(self):
+        return 'Всего еды куплено {}\nВсего шуб куплено {}\nДенег заработано {}'.format(
+            self.food, self.fur_coat, self.money)
 
 
 class House:
@@ -160,6 +167,7 @@ class Husband(Human):
         house = self.house
         cprint('{} весь день работал'.format(self.name), self.color)
         house.money += 150
+        LifeResults.money += 150
 
     def gaming(self):
         dice = randint(1, 6)
@@ -243,9 +251,11 @@ class Wife(Human):
             return
         elif remain < 180:
             self.house.money -= remain
+            LifeResults.food += remain
             self.house.ref_food += remain
         else:
             self.house.ref_food += 180
+            LifeResults.food += 180
             self.house.money -= 180
         cprint('{} купила еды'.format(self.name), self.color)
 
@@ -256,6 +266,7 @@ class Wife(Human):
             self.happiness -= 10
             return
         self.house.money -= 350
+        LifeResults.fur_coat += 1
         self.happiness += 60 if self.happiness <= 40 else self.happiness_maximum - self.happiness
         cprint('{} купила шубу'.format(self.name), self.color)
 
@@ -394,7 +405,7 @@ for day in range(1, 365):
         member.act()
         cprint('{}'.format(member), member.color)
     cprint(home, 'cyan')
-
+cprint(LifeResults(), 'red')
 
 
 
