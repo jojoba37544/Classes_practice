@@ -51,22 +51,29 @@ def printer(str, color, length, direction='right', attrs=None, end=None):
         return cprint(str, color, end=''), cprint(empty_space, color, attrs=attrs, end=end)
 
 
+class Life_results:
+        pass
+
+
 class House:
+
     ref_capacity = 360
+    cat_food_capacity = 180
 
     def __init__(self):
         self.money = 100
         self.ref_food = 50
         self.dirt = 0
         self.family = []
+        self.pet = None
+        self.results = '{} денег в доме, еды в доме {}, грязь {}'.format(self.money, self.ref_food, self.dirt)
 
     def __str__(self):
         self.dirt += 5
-        return '{} денег в доме, еды в доме {}, грязь {}'.format(self.money, self.ref_food, self.dirt)
+        return self.results
 
     def __len__(self):
         return len(self.__str__())
-
 
 class Human:
 
@@ -92,6 +99,10 @@ class Human:
                 cprint('{} УМЕРЛА ОТ ГОЛОДА'.format(self.name), 'red', attrs=['reverse'])
             return False
         self.fullness -= 10
+
+    def pet_interaction(self):
+        self.happiness += 5
+        cprint('{} гладил кота {}'.format(self.name, self.house.pet), self.color)
 
     def eat(self):
         if self.house.ref_food >= 10:
@@ -134,6 +145,11 @@ class Husband(Human):
             self.work()
         elif dice == 4:
             self.eat()
+        elif dice == 5:
+            if self.house.pet:
+                self.pet_interaction()
+            else:
+                self.gaming()
         else:
             self.gaming()
 
@@ -176,6 +192,9 @@ class Wife(Human):
         if self.house.ref_food < 20:
             self.shopping()
             return
+        if self.house.cat_food < 20:
+            self.cat_food_replenish()
+            return
         dice = randint(1, 6)
         if dice == 1:
             self.buy_fur_coat()
@@ -195,6 +214,20 @@ class Wife(Human):
                 cprint('{} капает на мозги {}'.format(self.name, fam_member.name), self.color)
             else:
                 return False
+
+    def cat_food_replenish(self):
+        cprint('{} отправилась в магазине купить еды для кота {}'.format(self.name, self.house.pet))
+        remain = self.house.cat_food_capacity - self.house.cat_food
+        if self.house.money < 100:
+            cprint('Недостаточно денег!', 'red', attrs=['reverse'])
+            return
+        elif remain < 100:
+            self.house.money -= remain
+            self.house.cat_food += remain
+        else:
+            self.house.cat_food += 180
+            self.house.money -= 180
+
 
     def shopping(self):
         cprint('{} отправилась в магазин купить еды'.format(self.name), self.color)
@@ -272,11 +305,71 @@ class Child(Human):
         return 'Сытость {}, уровень счастья {}'.format(self.fullness, self.happiness)
 
 
+class Cat:
+
+    def __init__(self, name, house):
+        self.name = name
+        self.fullness = 30
+        self.house = house
+        self.color = 'yellow'
+
+    def act(self):
+        if self.fullness < 0:
+            del self.house.family[self.house.family.index(self)]
+            self.house.results = House().results
+            cprint('Кот {} умер с голода'.format(self.name), 'red', attrs=['reverse'])
+            return
+        if self.fullness < 10:
+            self.eat()
+            return
+        dice = randint(1, 6)
+        if dice in range(1, 2):
+            self.eat()
+        elif dice == 2:
+            self.soil()
+        else:
+            self.sleep()
+        self.house.results = 'Денег в доме {}, еды в доме {}, неубранность {} \nКошачьей еды в доме {},'.format(
+            self.house.money, self.house.ref_food, self.house.dirt, self.house.cat_food)
+
+    def eat(self):
+        if self.house.cat_food >= 10:
+            cprint('Кот {} покушал'.format(self.name), self.color)
+            self.fullness += 20
+            self.house.cat_food -= 10
+        else:
+            self.fullness -= 10
+            cprint('Кот {} собрался покушать...'.format(self.name), self.color)
+            cprint('Недостаточно кошачьей еды!', 'red', attrs=['reverse'])
+
+    def sleep(self):
+        self.fullness -= 10
+        cprint('Кот {} спал целый день'.format(self.name), self.color)
+
+    def soil(self):
+        self.fullness -= 10
+        self.house.dirt += 5
+        cprint('Кот {} подрал обои'.format(self.name), self.color)
+
+    def move_in(self):
+        self.house.family.append(self)
+        if hasattr(self.house, 'cat_food'):
+            return
+        else:
+            setattr(self.house, 'cat_food', 30)
+        self.house.pet = self.name
+
+    def __str__(self):
+        return 'Сытость {}'.format(self.fullness)
+
 home = House()
 hus = Husband('Сережа')
 wife = Wife('Маша')
+cat = Cat('Сосиска', home)
 hus.move_in(home)
 wife.move_in(home)
+cat.move_in()
+
 child = Child('Артур')
 child.move_in(home)
 
@@ -297,7 +390,9 @@ for day in range(1, 366):
     cprint(home, 'cyan')
 
 
-# TODO после реализации первой части - отдать на проверку учителю
+
+
+
 
 ######################################################## Часть вторая
 #
@@ -322,24 +417,6 @@ for day in range(1, 366):
 # Степень сытости не должна падать ниже 0, иначе кот умрет от голода.
 #
 # Если кот дерет обои, то грязи становится больше на 5 пунктов
-
-
-class Cat:
-
-    def __init__(self):
-        pass
-
-    def act(self):
-        pass
-
-    def eat(self):
-        pass
-
-    def sleep(self):
-        pass
-
-    def soil(self):
-        pass
 
 ######################################################## Часть вторая бис
 #
@@ -419,3 +496,4 @@ class Cat:
 #       for salary in range(50, 401, 50):
 #           max_cats = life.experiment(salary)
 #           print(f'При зарплате {salary} максимально можно прокормить {max_cats} котов')
+
