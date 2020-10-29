@@ -67,34 +67,53 @@ class House:
     ref_capacity = 360
     pet_food_capacity = 180
 
-    def __init__(self, days):
+    def __init__(self, days, quantity_food, quantity_money):
         self.money = 100
         self.ref_food = 50
         self.dirt = 0
         self.days = days
         self.family = []
+        self.food_event_quan = quantity_food
+        self.money_event_quan = quantity_money
         self.pet = None
         self.results = '{} денег в доме, еды в доме {}, грязь {}'.format(self.money, self.ref_food, self.dirt)
         self.day_counter = 0
         self.event = 0
-        self.dice = randint(1+self.event, (self.days // 3) + self.event)
+        self.dice_food = randint(1 + self.event, (self.days // self.food_event_quan) + self.event)
+        self.dice_money = randint(1 + self.event, (self.days // self.money_event_quan) + self.event)
 
     def unexpected_event(self):
-        self.ref_food //= 2
-        cprint('Из холодильника пропала половина еды!', 'grey', attrs=['reverse'])
+        if self.day_counter == self.dice_food:
+            self.event += self.days // self.food_event_quan
+            self.__setattr__('dice_food', randint(1+self.event, self.days // self.food_event_quan + self.event))
+            self.ref_food //= 2
+            if any(isinstance(fam_member, Cat) for fam_member in self.family):
+                self.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}\nКошачьей еды в доме {}'.format(
+                    self.money, self.ref_food, self.dirt, self.food_event_quan))
+            else:
+                self.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}'.format(
+                    self.money, self.ref_food, self.dirt))
+            cprint('Из холодильника пропала половина еды!', 'grey', attrs=['reverse'])
+        if self.day_counter == self.dice_money:
+            self.event += self.days // self.money_event_quan
+            self.__setattr__('dice_money', randint(1+self.event, self.days // self.money_event_quan + self.event))
+            self.money //= 2
+            if any(isinstance(fam_member, Cat) for fam_member in self.family):
+                self.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}\nКошачьей еды в доме {}'.format(
+                    self.money, self.ref_food, self.dirt, self.money_event_quan))
+            else:
+                self.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}'.format(
+                    self.money, self.ref_food, self.dirt))
+            cprint('Пропали деньги!', 'green', attrs=['reverse'])
+        else:
+            pass
 
     def __str__(self):
         self.dirt += 5
         self.day_counter += 1
-        # self.event
-        # dice = randint(1+self.event, 165+self.event)
-        print(self.dice)
-        if self.day_counter == self.dice:
-            self.event += self.days // 3
-            print(self.event)
-            self.unexpected_event()
-            self.__setattr__('dice', randint(1+self.event, self.days // 3 + self.event))
-            return self.results
+        self.unexpected_event()
+        print(self.dice_food)
+        print(self.dice_money)
         return self.results
 
     def __len__(self):
@@ -148,6 +167,8 @@ class Human:
     def __str__(self):
         if self.house.dirt >= 90:
             self.happiness -= 10
+        results = self.house.results
+        setattr(self.house, self.house.results, results)
         return 'Сытость {}, уровень счастья {}'.format(self.fullness, self.happiness)
 
     def __len__(self):
@@ -397,7 +418,7 @@ class Cat:
     def __str__(self):
         return 'Сытость {}'.format(self.fullness)
 
-home = House(36)
+home = House(366, 10, 150)
 hus = Husband('Сережа')
 wife = Wife('Маша')
 cat = Cat('Сосиска', home)
@@ -415,7 +436,7 @@ child.move_in(home)
 # masha = Wife(name='Маша')
 
 
-for day in range(1, 36):
+for day in range(1, 366):
     if not home.family:
         break
     cprint('================== День {} =================='.format(day), color='red')
