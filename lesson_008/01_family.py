@@ -84,25 +84,11 @@ class House:
     def unexpected_event(self):
         if self.day_counter == self.dice_food:
             self.event += self.days // self.food_event_quan
-            # self.__setattr__('dice_food', randint(1 + self.event, self.days // self.food_event_quan + self.event))
             self.ref_food //= 2
-            # if any(isinstance(fam_member, Cat) for fam_member in self.family):
-            #     self.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}\nКошачьей еды в доме {}'.format(
-            #         self.money, self.ref_food, self.dirt, self.food_event_quan))
-            # else:
-            #     self.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}'.format(
-            #         self.money, self.ref_food, self.dirt))
             cprint('Из холодильника пропала половина еды!', 'grey', attrs=['reverse'])
         if self.day_counter == self.dice_money:
             self.event += self.days // self.money_event_quan
-            # self.__setattr__('dice_money', randint(1 + self.event, self.days // self.money_event_quan + self.event))
             self.money //= 2
-            # if any(isinstance(fam_member, Cat) for fam_member in self.family):
-            #     self.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}\nКошачьей еды в доме {}'.format(
-            #         self.money, self.ref_food, self.dirt, self.money_event_quan))
-            # else:
-            #     self.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}'.format(
-            #         self.money, self.ref_food, self.dirt))
             cprint('Пропали деньги!', 'green', attrs=['reverse'])
         else:
             pass
@@ -111,7 +97,6 @@ class House:
         self.dirt += 5
         self.day_counter += 1
         self.unexpected_event()
-        self.pet = choice(self.cat_list) if self.cat_list else None
         if any(isinstance(fam_member, Cat) for fam_member in self.family):
             return 'Денег в доме {}, еды в доме {}, грязь {}\nКошачьей еды в доме {}' \
                                     .format(self.money, self.ref_food, self.dirt, self.cat_food)
@@ -168,6 +153,7 @@ class Human:
     def __str__(self):
         if self.house.dirt >= 90:
             self.happiness -= 10
+        self.pet = choice(self.house.cat_list).name if self.house.cat_list else None
         # results = self.house.results
         # setattr(self.house, self.house.results, results)
         return 'Сытость {}, уровень счастья {}'.format(self.fullness, self.happiness)
@@ -188,7 +174,7 @@ class Husband(Human):
         if self.fullness <= 10:
             self.eat()
             return
-        if self.house.pet:
+        if self.house.pet is not None:
             if self.house.cat_food < 20 * int(len(self.house.cat_list)):
                 self.work()
                 return
@@ -201,7 +187,7 @@ class Husband(Human):
         elif dice == 4:
             self.eat()
         elif dice == 5:
-            if self.house.pet:
+            if self.house.pet is not None:
                 self.pet_interaction()
             else:
                 self.gaming()
@@ -246,7 +232,7 @@ class Wife(Human):
             if self.house.money < 350:
                 self.buy_fur_coat()
                 return
-            elif self.house.pet:
+            elif self.house.pet is not None:
                 self.pet_interaction()
             else:
                 cprint('{} несчастна и ничего не может на данный момент унять ее грусть'.format(self.name, self.color))
@@ -266,7 +252,7 @@ class Wife(Human):
         elif dice == 4:
             self.eat()
         elif dice == 5:
-            if any(isinstance(fam_member, Cat) for fam_member in self.house.family):
+            if self.house.pet is not None:
                 self.pet_interaction()
             else:
                 cprint('{} бездельничала'.format(self.name), self.color)
@@ -274,7 +260,17 @@ class Wife(Human):
             if self.house.ref_food < self.house.ref_capacity:
                 self.shopping()
             else:
-                cprint('{} бездельничала'.format(self.name), self.color)
+                self.free_time()
+        else:
+            self.free_time()
+
+    def free_time(self):
+        dice = randint(1, 3)
+        if dice == 1:
+            for fam_member in self.house.family:
+                if fam_member.__class__.__name__ == 'Child':
+                    cprint('{} нянчилась с {}'.format(self.name, fam_member.name), self.color)
+                    return
         else:
             cprint('{} бездельничала'.format(self.name), self.color)
 
@@ -388,11 +384,8 @@ class Cat:
 
     def act(self):
         if self.fullness < 0:
-            # self.house.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}'.format(
-            #     self.house.money, self.house.ref_food, self.house.dirt))
             del self.house.family[self.house.family.index(self)]
             del self.house.cat_list[self.house.cat_list.index(self)]
-            self.house.cats_counter -= 1
             cprint('Кот {} умер с голода'.format(self.name), 'red', attrs=['reverse'])
             return
         if self.fullness < 10:
@@ -405,8 +398,6 @@ class Cat:
             self.soil()
         else:
             self.sleep()
-        # self.house.results = 'Денег в доме {}, еды в доме {}, неубранность {} \nКошачьей еды в доме {}'.format(
-        #     self.house.money, self.house.ref_food, self.house.dirt, self.house.cat_food)
 
     def eat(self):
         if self.house.cat_food >= 10:
@@ -430,11 +421,6 @@ class Cat:
     def move_in(self):
         self.house.family.append(self)
         self.house.cat_list.append(self)
-        # if self.house.cats_counter == 1:
-        #     pass
-        # else:
-        #     self.house.cats_counter += 1
-        # self.house.cats_counter += 1
         if hasattr(self.house, 'cat_food'):
             return
         else:
