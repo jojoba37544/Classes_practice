@@ -71,10 +71,7 @@ class House:
         self.dirt = 0
         self.days = days
         self.family = []
-        self.cats_counter = 0
-        for cat in range(len(self.family)):
-            if cat.__class__.__name__ == 'Cat':
-                self.cats_counter += 1
+        self.cat_list = []
         self.food_event_quan = quantity_food
         self.money_event_quan = quantity_money
         self.pet = None
@@ -114,9 +111,10 @@ class House:
         self.dirt += 5
         self.day_counter += 1
         self.unexpected_event()
+        self.pet = choice(self.cat_list) if self.cat_list else None
         if any(isinstance(fam_member, Cat) for fam_member in self.family):
             return 'Денег в доме {}, еды в доме {}, грязь {}\nКошачьей еды в доме {}' \
-                                    .format(self.money, self.ref_food, self.dirt, self.food_event_quan)
+                                    .format(self.money, self.ref_food, self.dirt, self.cat_food)
         else:
             return '{} денег в доме, еды в доме {}, грязь {}'.format(self.money, self.ref_food, self.dirt)
 
@@ -191,7 +189,7 @@ class Husband(Human):
             self.eat()
             return
         if self.house.pet:
-            if self.house.cat_food < 20 * self.house.cats_counter:
+            if self.house.cat_food < 20 * int(len(self.house.cat_list)):
                 self.work()
                 return
         if self.house.money < self.salary:
@@ -259,7 +257,7 @@ class Wife(Human):
             self.shopping()
             return
         if any(isinstance(fam_member, Cat) for fam_member in self.house.family):
-            if self.house.cat_food < 20 * self.house.cats_counter:
+            if self.house.cat_food < 20 * int(len(self.house.cat_list)):
                 self.cat_food_replenish()
                 return
         dice = randint(1, 6)
@@ -393,6 +391,7 @@ class Cat:
             # self.house.__setattr__('results', 'Денег в доме {}, еды в доме {}, грязь {}'.format(
             #     self.house.money, self.house.ref_food, self.house.dirt))
             del self.house.family[self.house.family.index(self)]
+            del self.house.cat_list[self.house.cat_list.index(self)]
             self.house.cats_counter -= 1
             cprint('Кот {} умер с голода'.format(self.name), 'red', attrs=['reverse'])
             return
@@ -430,11 +429,17 @@ class Cat:
 
     def move_in(self):
         self.house.family.append(self)
+        self.house.cat_list.append(self)
+        # if self.house.cats_counter == 1:
+        #     pass
+        # else:
+        #     self.house.cats_counter += 1
+        # self.house.cats_counter += 1
         if hasattr(self.house, 'cat_food'):
             return
         else:
             setattr(self.house, 'cat_food', 30)
-        self.house.pet = self.name
+
 
     def __str__(self):
         return 'Сытость {}'.format(self.fullness)
