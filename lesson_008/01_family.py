@@ -51,19 +51,23 @@ def printer(str, color, length, direction='right', attrs=None, end=None):
         return cprint(str, color, end=''), cprint(empty_space, color, attrs=attrs, end=end)
 
 
-class LifeResults:
-    food = 0
-    fur_coat = 0
-    money = 0
 
-    def __str__(self):
-        return 'Всего еды куплено {}\nВсего шуб куплено {}\nДенег заработано {}'.format(
-            self.food, self.fur_coat, self.money)
 
 
 class House:
     ref_capacity = 360
     pet_food_capacity = 180
+
+    class LifeResults:
+        food = 0
+        fur_coat = 0
+        money = 0
+        cats = 0
+        cats_died = 0
+
+        def __str__(self):
+            return 'Всего еды куплено {}\nВсего шуб куплено {}\nДенег заработано {}\nКотов было {}' \
+                   '\nКотов умерло {}'.format(self.food, self.fur_coat, self.money, self.cats, self.cats_died)
 
     def __init__(self, days, quantity_food, quantity_money):
         self.money = 100
@@ -99,7 +103,7 @@ class House:
         self.unexpected_event()
         if any(isinstance(fam_member, Cat) for fam_member in self.family):
             return 'Денег в доме {}, еды в доме {}, грязь {}\nКошачьей еды в доме {}' \
-                                    .format(self.money, self.ref_food, self.dirt, self.cat_food)
+                .format(self.money, self.ref_food, self.dirt, self.cat_food)
         else:
             return '{} денег в доме, еды в доме {}, грязь {}'.format(self.money, self.ref_food, self.dirt)
 
@@ -197,7 +201,7 @@ class Husband(Human):
     def work(self):
         cprint('{} весь день работал'.format(self.name), self.color)
         self.house.money += self.salary
-        LifeResults.money += self.salary
+        self.house.LifeResults.money += self.salary
 
     def gaming(self):
         dice = randint(1, 6)
@@ -304,11 +308,11 @@ class Wife(Human):
             return
         elif remain < 180:
             self.house.money -= remain
-            LifeResults.food += remain
+            self.house.LifeResults.food += remain
             self.house.ref_food += remain
         else:
             self.house.ref_food += 180
-            LifeResults.food += 180
+            self.house.LifeResults.food += 180
             self.house.money -= 180
         cprint('{} купила еды'.format(self.name), self.color)
 
@@ -318,7 +322,7 @@ class Wife(Human):
             cprint('Недостаточно денег!', 'red', attrs=['reverse'])
             return
         self.house.money -= 350
-        LifeResults.fur_coat += 1
+        self.house.LifeResults.fur_coat += 1
         self.happiness += 60 if self.happiness <= 40 else self.happiness_maximum - self.happiness
         cprint('{} купила шубу'.format(self.name), self.color)
 
@@ -386,6 +390,7 @@ class Cat:
         if self.fullness < 0:
             del self.house.family[self.house.family.index(self)]
             del self.house.cat_list[self.house.cat_list.index(self)]
+            self.house.LifeResults.cats_died += 1
             cprint('Кот {} умер с голода'.format(self.name), 'red', attrs=['reverse'])
             return
         if self.fullness < 10:
@@ -421,11 +426,11 @@ class Cat:
     def move_in(self):
         self.house.family.append(self)
         self.house.cat_list.append(self)
+        self.house.LifeResults.cats += 1
         if hasattr(self.house, 'cat_food'):
             return
         else:
             setattr(self.house, 'cat_food', 30)
-
 
     def __str__(self):
         return 'Сытость {}'.format(self.fullness)
@@ -439,7 +444,7 @@ class Simulation:
     days = 366
     food = 3
     money = 3
-    salary =180
+    salary = 180
 
     def __init__(self, days=days, food=food, money=money, salary=salary, cats=0):
         self.cat_names = ['Сосиска', 'Сарделька', 'Колбаска', 'Сигизмунд', 'Козел', 'Шнур', 'Семен', 'Петя', 'Авгуша',
@@ -467,7 +472,8 @@ class Simulation:
                 member.act()
                 cprint('{}'.format(member), member.color)
             cprint(self.home, 'cyan')
-        cprint(LifeResults(), 'red')
+        cprint(self.home.LifeResults(), 'red')
+
 
     def __str__(self):
         return
@@ -475,17 +481,17 @@ class Simulation:
     def max_cats(self, salary, cats):
         self.__setattr__('salary', salary)
         cats = cats
-
-        life_exp = Simulation()
+        Simulation()
         if self.days == 365:
-            if any(isinstance(member, Cat) for member in life_exp.home.family):
+            if self.home.cat_list:
                 print(cats)
             else:
                 print('dead')
 
 
+
 life = Simulation(366, 3, 3, 180, 3)
-# life.max_cats(180, 2)
+life.max_cats(180, 2)
 
 # for food_incidents in range(6):
 #     for money_incidents in range(6):
