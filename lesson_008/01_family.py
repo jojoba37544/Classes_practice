@@ -121,7 +121,7 @@ class Human:
 
     def __init__(self, name):
         self.name = name
-        self.fullness = -100
+        self.fullness = 30
         self.happiness = 100
         self.house = None
 
@@ -131,6 +131,8 @@ class Human:
         if self.fullness < 0:
             self.dying()
         self.fullness -= 10
+        if self in self.house.died_members:
+            return 'dead'
 
     def dying(self):
         reason = 'ДЕПРЕССИИ' if self.happiness < 0 else 'ГОЛОДА'
@@ -140,11 +142,10 @@ class Human:
             cprint('{} УМЕРЛА ОТ {}'.format(self.name, reason), 'red', attrs=['reverse'])
         self.house.died_members.append(self)
         self.house.family[self.house.family.index(self)] = None
-        return
 
     def pet_interaction(self):
         self.happiness += 5 if self.happiness <= 95 else self.happiness_maximum - self.happiness
-        cprint('{} гладил кота {}'.format(self.name, self.house.pet), self.color)
+        cprint('{} гладил кота {}'.format(self.name, choice(self.house.cat_list).name, self.color), self.color)
 
     def eat(self):
         if self.house.ref_food >= 10:
@@ -162,23 +163,25 @@ class Human:
     def __str__(self):
         if self.house.dirt >= 90:
             self.happiness -= 10
-        self.pet = choice(self.house.cat_list).name if self.house.cat_list else None
-        # results = self.house.results
-        # setattr(self.house, self.house.results, results)
         return 'Сытость {}, уровень счастья {}'.format(self.fullness, self.happiness)
 
     def __len__(self):
         return len(self.__str__())
 
 
-class Husband(Human):
+class Parent(Human):
+    pass
+
+
+class Husband(Parent):
     def __init__(self, name, salary):
         super().__init__(name=name)
         self.color = 'blue'
         self.salary = salary
 
     def act(self):
-        super().act()
+        if super().act() == 'dead':
+            return
         if self.fullness <= 10:
             self.eat()
             return
@@ -195,7 +198,7 @@ class Husband(Human):
         elif dice == 4:
             self.eat()
         elif dice == 5:
-            if self.house.pet is not None:
+            if self.house.cat_list:
                 self.pet_interaction()
             else:
                 self.gaming()
@@ -220,29 +223,29 @@ class Husband(Human):
             cprint('{} весь день играл в доту'.format(self.name), self.color)
 
 
-class Wife(Human):
+class Wife(Parent):
 
     def __init__(self, name):
         super().__init__(name=name)
         self.color = 'magenta'
 
     def act(self):
-        super().act()
+        if super().act() == 'dead':
+            return
         if self.fullness <= 20:
             if self.house.ref_food < 0:
                 self.shopping()
-                return
             else:
                 self.eat()
                 return
         if self.happiness < 20:
             if self.house.money < 350:
                 self.buy_fur_coat()
-                return
-            elif self.house.pet is not None:
+            elif self.house.cat_list:
                 self.pet_interaction()
             else:
                 cprint('{} несчастна и ничего не может на данный момент унять ее грусть'.format(self.name, self.color))
+                return
         if self.house.dirt >= 90:
             self.clean_house()
             return
@@ -259,7 +262,7 @@ class Wife(Human):
         elif dice == 4:
             self.eat()
         elif dice == 5:
-            if self.house.pet is not None:
+            if self.house.cat_list:
                 self.pet_interaction()
             else:
                 cprint('{} бездельничала'.format(self.name), self.color)
@@ -341,10 +344,10 @@ class Child(Human):
         self.color = 'green'
 
     def act(self):
-        if super().act() is False:
+        if super().act() == 'dead':
             return
-        if not any(isinstance(fam_member, Human) for fam_member in self.house.family):
-            cprint('{} ОСТАЛСЯ ОДИН!, НЕКОМУ ЕГО КОРМИТЬ!'.format(self.name))
+        if not any(isinstance(fam_member, Parent) for fam_member in self.house.family):
+            cprint('{} ОСТАЛСЯ ОДИН!, НЕКОМУ ЕГО КОРМИТЬ!'.format(self.name), 'red', attrs=['reverse'])
             return
         if self.fullness <= 20:
             self.eat()
@@ -439,10 +442,6 @@ class Cat:
         return 'Сытость {}'.format(self.fullness)
 
 
-# for member in home.family:
-#     member.move_in(home)
-# masha = Wife(name='Маша')
-
 class Simulation:
     days = 366
     food = 3
@@ -493,7 +492,7 @@ class Simulation:
 
 
 
-life = Simulation(366, 3, 3, 180, 3)
+life = Simulation(366, 3, 3, 1280, 10)
 # life.max_cats(180, 2)
 
 # for food_incidents in range(6):
