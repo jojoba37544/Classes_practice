@@ -75,6 +75,7 @@ class House:
         self.dirt = 0
         self.days = days
         self.family = []
+        self.died_members = []
         self.cat_list = []
         self.food_event_quan = quantity_food
         self.money_event_quan = quantity_money
@@ -101,6 +102,10 @@ class House:
         self.dirt += 5
         self.day_counter += 1
         self.unexpected_event()
+        while None in self.family:
+            for fam_member in self.family:
+                if fam_member is None:
+                    del self.family[self.family.index(fam_member)]
         if any(isinstance(fam_member, Cat) for fam_member in self.family):
             return 'Денег в доме {}, еды в доме {}, грязь {}\nКошачьей еды в доме {}' \
                 .format(self.money, self.ref_food, self.dirt, self.cat_food)
@@ -116,26 +121,26 @@ class Human:
 
     def __init__(self, name):
         self.name = name
-        self.fullness = 30
+        self.fullness = -100
         self.happiness = 100
         self.house = None
 
     def act(self):
         if self.happiness < 0:
-            del self.house.family[self.house.family.index(self)]
-            if self.__class__.__name__ == 'Husband' or self.__class__.__name__ == 'Child':
-                cprint('{} УМЕР ОТ ДЕПРЕССИИ'.format(self.name), 'red', attrs=['reverse'])
-            else:
-                cprint('{} УМЕРЛА ОТ ДЕПРЕССИИ'.format(self.name), 'red', attrs=['reverse'])
-            return False
+            self.dying()
         if self.fullness < 0:
-            del self.house.family[self.house.family.index(self)]
-            if self.__class__.__name__ == 'Husband' or self.__class__.__name__ == 'Child':
-                cprint('{} УМЕР ОТ ГОЛОДА'.format(self.name), 'red', attrs=['reverse'])
-            else:
-                cprint('{} УМЕРЛА ОТ ГОЛОДА'.format(self.name), 'red', attrs=['reverse'])
-            return False
+            self.dying()
         self.fullness -= 10
+
+    def dying(self):
+        reason = 'ДЕПРЕССИИ' if self.happiness < 0 else 'ГОЛОДА'
+        if self.__class__.__name__ == 'Husband' or self.__class__.__name__ == 'Child':
+            cprint('{} УМЕР ОТ {}'.format(self.name, reason), 'red', attrs=['reverse'])
+        else:
+            cprint('{} УМЕРЛА ОТ {}'.format(self.name, reason), 'red', attrs=['reverse'])
+        self.house.died_members.append(self)
+        self.house.family[self.house.family.index(self)] = None
+        return
 
     def pet_interaction(self):
         self.happiness += 5 if self.happiness <= 95 else self.happiness_maximum - self.happiness
@@ -173,8 +178,7 @@ class Husband(Human):
         self.salary = salary
 
     def act(self):
-        if super().act() is False:
-            return
+        super().act()
         if self.fullness <= 10:
             self.eat()
             return
@@ -223,8 +227,7 @@ class Wife(Human):
         self.color = 'magenta'
 
     def act(self):
-        if super().act() is False:
-            return
+        super().act()
         if self.fullness <= 20:
             if self.house.ref_food < 0:
                 self.shopping()
@@ -491,7 +494,7 @@ class Simulation:
 
 
 life = Simulation(366, 3, 3, 180, 3)
-life.max_cats(180, 2)
+# life.max_cats(180, 2)
 
 # for food_incidents in range(6):
 #     for money_incidents in range(6):
